@@ -1,9 +1,9 @@
-import p5 from 'p5';
+import 'q5';
 import {data} from './data.js';
 import {XKCD} from './xkcd.js';
 
-new p5((p) => {
-  const xkcd = new XKCD(p, data);
-  p.setup = xkcd.setup;
-  p.draw = xkcd.draw;
-});
+const instance = new q5('xkcd');
+const xkcd = new XKCD(instance, data);
+
+(instance as typeof instance & {setup: unknown}).setup = xkcd.setup;
+instance.draw = xkcd.draw;

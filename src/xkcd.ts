@@ -1,16 +1,28 @@
-import p5 from 'p5';
+import 'q5';
 import Matter from 'matter-js';
 import type {Rect} from './types.js';
 
+declare global {
+  function image(
+    img: Q5.Image,
+    x: number,
+    y: number,
+    width?: number,
+    height?: number
+  ): void;
+}
+
 export class XKCD {
-  #img!: p5.Image;
+  #img!: Q5.Image;
   #engine!: Matter.Engine;
   #rects!: Rect[];
-  #p5: p5;
+  #p5: Q5;
   #ground!: Rect;
   #data: number[];
+  #width!: number;
+  #height!: number;
 
-  constructor(p: p5, data: number[]) {
+  constructor(p: Q5, data: number[]) {
     this.#p5 = p;
     this.#data = data;
   }
@@ -19,22 +31,18 @@ export class XKCD {
     const newBody = Matter.Bodies.rectangle(x, y, w, h);
     Matter.Composite.add(this.#engine.world, newBody);
 
-    this.#p5.colorMode(this.#p5.HSB, 255);
-
     return {
       body: newBody,
       w: w,
-      h: h,
-      fillColour: this.#p5.color(this.#p5.random(255), 150, 255)
+      h: h
     };
   }
 
   setup = async () => {
     this.#img = await this.#p5.loadImage('images/xkcd.png');
-    const canvas = this.#p5.createCanvas(
-      this.#img.width / 2,
-      this.#img.height / 2
-    );
+    this.#width = this.#img.width / 2;
+    this.#height = this.#img.height / 2;
+    const canvas = await this.#p5.Canvas(this.#width, this.#height);
     this.#engine = Matter.Engine.create();
 
     this.#engine.positionIterations = 1000;
@@ -49,7 +57,7 @@ export class XKCD {
 
     for (let idx = 0; idx < this.#data.length; idx += 4) {
       this.#data[idx + 1] =
-        this.#p5.height - this.#data[idx + 1] - this.#data[idx + 3] - 20;
+        this.#height - this.#data[idx + 1] - this.#data[idx + 3] - 20;
       this.#data[idx] += 20;
       y = this.#data[idx + 1] + this.#data[idx + 3];
       ymax = this.#p5.max(y, ymax);
@@ -58,9 +66,9 @@ export class XKCD {
     this.#rects = [];
 
     this.#ground = this.#createRect(
-      this.#p5.width / 2,
-      this.#p5.height,
-      this.#p5.width,
+      this.#width / 2,
+      this.#height,
+      this.#width,
       2 * 31.535
     );
     Matter.Body.setStatic(this.#ground.body, true);
@@ -78,8 +86,8 @@ export class XKCD {
 
     Matter.Engine.update(this.#engine);
 
-    const theMouse = Matter.Mouse.create(canvas.elt);
-    theMouse.pixelRatio = this.#p5.pixelDensity();
+    const theMouse = Matter.Mouse.create(canvas);
+    theMouse.pixelRatio = this.#p5.pixelDensity(null as never);
     const mouseConstraint = Matter.MouseConstraint.create(this.#engine, {
       mouse: theMouse
     });
@@ -92,13 +100,13 @@ export class XKCD {
   };
 
   draw = () => {
-    this.#p5.image(this.#img, 0, 0, this.#p5.width, this.#p5.height);
+    this.#p5.image(this.#img, 0, 0, this.#width, this.#height);
 
     Matter.Engine.update(this.#engine);
 
     this.#p5.strokeWeight(2);
-    this.#p5.fill(225);
-    this.#p5.rectMode(this.#p5.CENTER);
+    this.#p5.fill(this.#p5.color(225));
+    this.#p5.rectMode('center');
 
     for (let re of this.#rects) {
       this.#p5.push();
@@ -108,9 +116,9 @@ export class XKCD {
       this.#p5.pop();
     }
 
-    this.#p5.rectMode(this.#p5.CORNER);
+    this.#p5.rectMode('corner');
     this.#p5.noFill();
     this.#p5.strokeWeight(4);
-    this.#p5.rect(0, 0, this.#p5.width, this.#p5.height);
+    this.#p5.rect(0, 0, this.#width, this.#height);
   };
 }

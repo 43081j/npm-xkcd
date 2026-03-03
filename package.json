@@ -24,8 +24,8 @@
     "@typescript/native-preview": "^7.0.0-dev.20260303.1",
     "@vitest/coverage-v8": "^4.0.18",
     "matter-js": "^0.20.0",
-    "p5": "^2.2.2",
     "prettier": "^3.8.1",
+    "q5": "^4.2.6",
     "vite": "^7.3.1",
     "vitest": "^4.0.18"
   }
