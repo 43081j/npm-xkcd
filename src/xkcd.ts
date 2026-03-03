@@ -18,11 +18,11 @@ export class XKCD {
   #rects!: Rect[];
   #p5: Q5;
   #ground!: Rect;
-  #data: number[];
+  #data: Array<[number, number, number, number]>;
   #width!: number;
   #height!: number;
 
-  constructor(p: Q5, data: number[]) {
+  constructor(p: Q5, data: Array<[number, number, number, number]>) {
     this.#p5 = p;
     this.#data = data;
   }
@@ -51,15 +51,17 @@ export class XKCD {
     let y = 0;
     let ymax = 0;
 
-    for (let idx = 0; idx < this.#data.length; ++idx) {
-      this.#data[idx] *= 1.07;
+    for (const rect of this.#data) {
+      rect[0] *= 1.07;
+      rect[1] *= 1.07;
+      rect[2] *= 1.07;
+      rect[3] *= 1.07;
     }
 
-    for (let idx = 0; idx < this.#data.length; idx += 4) {
-      this.#data[idx + 1] =
-        this.#height - this.#data[idx + 1] - this.#data[idx + 3] - 20;
-      this.#data[idx] += 20;
-      y = this.#data[idx + 1] + this.#data[idx + 3];
+    for (const rect of this.#data) {
+      rect[1] = this.#height - rect[1] - rect[3] - 20;
+      rect[0] += 20;
+      y = rect[1] + rect[3];
       ymax = this.#p5.max(y, ymax);
     }
 
@@ -73,13 +75,8 @@ export class XKCD {
     );
     Matter.Body.setStatic(this.#ground.body, true);
 
-    for (let idx = 0; idx < this.#data.length; idx += 4) {
-      const r = this.#createRect(
-        this.#data[idx] + 0.5 * this.#data[idx + 2],
-        this.#data[idx + 1] + 0.5 * this.#data[idx + 3],
-        this.#data[idx + 2],
-        this.#data[idx + 3]
-      );
+    for (const [x, y, w, h] of this.#data) {
+      const r = this.#createRect(x + 0.5 * w, y + 0.5 * h, w, h);
       Matter.Body.setStatic(r.body, true);
       this.#rects.push(r);
     }
