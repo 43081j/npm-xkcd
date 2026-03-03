@@ -17,6 +17,51 @@ async function getContainer(): Promise<WebContainer> {
   return currentContainerPromise;
 }
 
+const GET_SIZES_SCRIPT = /* js */ `
+import {readdirSync, statSync, readFileSync} from 'fs';
+
+function dirSize(dir) {
+  try {
+    let total = 0;
+    for (const entry of readdirSync(dir, {withFileTypes: true})) {
+      if (entry.name === 'node_modules') continue;
+      const p = dir + '/' + entry.name;
+      total += entry.isDirectory() ? dirSize(p) : statSync(p).size;
+    }
+    return total;
+  } catch {
+    return 0;
+  }
+}
+
+function scan(nm, sizes) {
+  try {
+    for (const entry of readdirSync(nm, {withFileTypes: true})) {
+      if (!entry.isDirectory()) continue;
+      if (entry.name.startsWith('@')) {
+        for (const pkg of readdirSync(nm + '/' + entry.name, {withFileTypes: true})) {
+          if (pkg.isDirectory()) register(nm + '/' + entry.name + '/' + pkg.name, sizes);
+        }
+      } else {
+        register(nm + '/' + entry.name, sizes);
+      }
+    }
+  } catch {}
+}
+
+function register(pkgDir, sizes) {
+  try {
+    const {name, version} = JSON.parse(readFileSync(pkgDir + '/package.json', 'utf8'));
+    sizes[name + '@' + version] = dirSize(pkgDir);
+    scan(pkgDir + '/node_modules', sizes);
+  } catch {}
+}
+
+const sizes = {};
+scan('project/node_modules', sizes);
+console.log(JSON.stringify(sizes));
+`;
+
 async function exec(cmd: string, args: string[], cwd: string) {
   const container = await getContainer();
   const proc = await container.spawn(cmd, args, {cwd});
@@ -57,12 +102,38 @@ export async function installPackage(packageName: string): Promise<void> {
           file: {
             contents: generatePackageJson(packageName)
           }
+        },
+        'get-sizes.mjs': {
+          file: {contents: GET_SIZES_SCRIPT}
         }
       }
     }
   });
 
   await exec('npm', ['install', packageName], '/project');
+}
+
+async function execOutput(cmd: string, args: string[]): Promise<string> {
+  const container = await getContainer();
+  const proc = await container.spawn(cmd, args);
+  let output = '';
+  await Promise.all([
+    proc.output.pipeTo(
+      new WritableStream({
+        write(chunk) {
+          output += chunk;
+        }
+      })
+    ),
+    proc.exit
+  ]);
+  return output;
+}
+
+export async function getPackageSizes(): Promise<Map<string, number>> {
+  const output = await execOutput('node', ['project/get-sizes.mjs']);
+  const json: Record<string, number> = JSON.parse(output);
+  return new Map(Object.entries(json));
 }
 
 export async function getLockFile(): Promise<ParsedLockFile> {
@@ -76,7 +147,6 @@ export async function getLockFile(): Promise<ParsedLockFile> {
     'utf-8'
   );
   const packageJSON = JSON.parse(packageJSONContent);
-  const lockFileJSON = JSON.parse(lockFileContent);
-  const parsed = await parse(lockFileJSON, 'package-lock.json', packageJSON);
+  const parsed = await parse(lockFileContent, 'package-lock.json', packageJSON);
   return parsed;
 }
