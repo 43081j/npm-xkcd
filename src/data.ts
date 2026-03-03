@@ -7,7 +7,7 @@ function sizeToPixels(bytes: number): number {
 
 export async function computeRects(
   lockFile: ParsedLockFile
-): Promise<Array<[number, number, number, number]>> {
+): Promise<Array<[number, number, number, number, string]>> {
   const sizes = await getPackageSizes();
   const seen = new Set<string>();
   const nodes: Array<{name: string; version: string}> = [];
@@ -27,31 +27,35 @@ export async function computeRects(
     }
   }
 
+  nodes.reverse();
+
   const pixelSizes = nodes.map(({name, version}) =>
     sizeToPixels(sizes.get(`${name}@${version}`) ?? 0)
   );
 
   const cols = Math.ceil(Math.sqrt(nodes.length));
+  const rows = Math.ceil(nodes.length / cols);
 
-  const colMaxWidths = new Array<number>(cols).fill(0);
+  const rowHeights = new Array<number>(rows).fill(0);
   for (let i = 0; i < pixelSizes.length; i++) {
-    const col = i % cols;
-    colMaxWidths[col] = Math.max(colMaxWidths[col], pixelSizes[i]);
+    const row = Math.floor(i / cols);
+    rowHeights[row] = Math.max(rowHeights[row], pixelSizes[i]);
   }
 
-  const colX = new Array<number>(cols).fill(0);
-  for (let c = 1; c < cols; c++) {
-    colX[c] = colX[c - 1] + colMaxWidths[c - 1];
+  const rowY = new Array<number>(rows).fill(0);
+  for (let r = 1; r < rows; r++) {
+    rowY[r] = rowY[r - 1] + rowHeights[r - 1];
   }
 
-  const colBottoms = new Array<number>(cols).fill(0);
-  const rects: Array<[number, number, number, number]> = [];
+  const rowX = new Array<number>(rows).fill(0);
+  const rects: Array<[number, number, number, number, string]> = [];
 
   for (let i = 0; i < pixelSizes.length; i++) {
-    const col = i % cols;
+    const row = Math.floor(i / cols);
     const size = pixelSizes[i];
-    rects.push([colX[col], colBottoms[col], size, size]);
-    colBottoms[col] += size;
+    const {name, version} = nodes[i];
+    rects.push([rowX[row], rowY[row], size, size, `${name}@${version}`]);
+    rowX[row] += size;
   }
 
   return rects;

@@ -4,4 +4,5 @@ export interface Rect {
   body: Matter.Body;
   w: number;
   h: number;
+  name: string;
 }
