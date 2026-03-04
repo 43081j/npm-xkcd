@@ -5,71 +5,76 @@ function sizeToPixels(bytes: number): number {
   return Math.max(10, Math.sqrt(bytes / 1000));
 }
 
+function computeDepths(lockFile: ParsedLockFile): Map<string, number> {
+  const depths = new Map<string, number>();
+
+  function visit(dep: ParsedDependency, depth: number, path: Set<string>) {
+    const key = `${dep.name}@${dep.version}`;
+    if (path.has(key)) return;
+    if ((depths.get(key) ?? -1) >= depth) return;
+    depths.set(key, depth);
+    path.add(key);
+    for (const child of dep.dependencies) {
+      visit(child, depth + 1, path);
+    }
+    path.delete(key);
+  }
+
+  for (const dep of lockFile.root.dependencies) {
+    visit(dep, 0, new Set());
+  }
+
+  return depths;
+}
+
 export async function computeRects(
   lockFile: ParsedLockFile
 ): Promise<Array<[number, number, number, number, string]>> {
   const sizes = await getPackageSizes();
-  const seen = new Set<string>();
-  const nodes: Array<{name: string; version: string}> = [];
-  const queue: ParsedDependency[] = [...lockFile.root.dependencies];
+  const depths = computeDepths(lockFile);
 
-  while (queue.length > 0) {
-    const node = queue.shift()!;
-    const key = `${node.name}@${node.version}`;
-    if (seen.has(key)) {
-      continue;
-    }
-    seen.add(key);
-    nodes.push({name: node.name, version: node.version});
-
-    for (const dep of node.dependencies) {
-      queue.push(dep);
-    }
-  }
-
-  nodes.reverse();
-
-  const pixelSizes = nodes.map(({name, version}) =>
-    sizeToPixels(sizes.get(`${name}@${version}`) ?? 0)
+  // deepest dependencies first
+  const nodes = [...depths.entries()].sort((a, b) => b[1] - a[1]);
+  const pixelSizes = nodes.map(([key]) =>
+    Math.round(sizeToPixels(sizes.get(key) ?? 0))
   );
 
-  const cols = Math.ceil(Math.sqrt(nodes.length));
-  const rows = Math.ceil(nodes.length / cols);
+  const totalArea = pixelSizes.reduce((sum, s) => sum + s * s, 0);
+  const canvasW = Math.round(Math.sqrt(totalArea) * 0.9);
 
-  const rowHeights = new Array<number>(rows).fill(0);
-  for (let i = 0; i < pixelSizes.length; i++) {
-    const row = Math.floor(i / cols);
-    rowHeights[row] = Math.max(rowHeights[row], pixelSizes[i]);
-  }
+  const skyline = new Array<number>(canvasW).fill(0);
+  const center = canvasW / 2;
 
-  const rowY = new Array<number>(rows).fill(0);
-  for (let r = 1; r < rows; r++) {
-    rowY[r] = rowY[r - 1] + rowHeights[r - 1];
-  }
-
-  const rowTotalWidth = new Array<number>(rows).fill(0);
-  const rowNodeCount = new Array<number>(rows).fill(0);
-  for (let i = 0; i < pixelSizes.length; i++) {
-    const row = Math.floor(i / cols);
-    rowTotalWidth[row] += pixelSizes[i];
-    rowNodeCount[row]++;
-  }
-  const maxWidth = Math.max(...rowTotalWidth);
-
-  const rowX = new Array<number>(rows).fill(0);
-  const rowIdx = new Array<number>(rows).fill(0);
   const rects: Array<[number, number, number, number, string]> = [];
 
-  for (let i = 0; i < pixelSizes.length; i++) {
-    const row = Math.floor(i / cols);
-    const size = pixelSizes[i];
-    const n = rowNodeCount[row];
-    const gap = n > 1 ? (maxWidth - rowTotalWidth[row]) / (n - 1) : 0;
-    const x = rowX[row] + rowIdx[row] * gap;
-    const {name, version} = nodes[i];
-    rects.push([x, rowY[row], size, rowHeights[row], `${name}@${version}`]);
-    rowX[row] += size;
-    rowIdx[row]++;
+  for (let i = 0; i < nodes.length; i++) {
+    const [key] = nodes[i];
+    const s = pixelSizes[i];
+    const w = Math.min(s, canvasW);
+
+    let bestX = 0;
+    let bestY = Infinity;
+    let bestDist = Infinity;
+
+    for (let x = 0; x <= canvasW - w; x++) {
+      let y = 0;
+      for (let col = x; col < x + w; col++) {
+        if (skyline[col] > y) y = skyline[col];
+      }
+      const dist = Math.abs(x + w / 2 - center);
+      if (y < bestY || (y === bestY && dist < bestDist)) {
+        bestX = x;
+        bestY = y;
+        bestDist = dist;
+      }
+    }
+
+    rects.push([bestX, bestY, w, s, key]);
+
+    const newH = bestY + s;
+    for (let col = bestX; col < bestX + w; col++) {
+      skyline[col] = newH;
+    }
   }
 
   return rects;

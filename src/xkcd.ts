@@ -81,8 +81,10 @@ export class XKCD {
       }
     }
 
+    const groundHalfH = 31.535;
+
     for (const rect of this.#data) {
-      rect[1] = this.#height - rect[1] - rect[3] - 20;
+      rect[1] = this.#height - rect[1] - rect[3] - groundHalfH;
       rect[0] += 20;
       y = rect[1] + rect[3];
       ymax = this.#p5.max(y, ymax);
@@ -94,7 +96,7 @@ export class XKCD {
       this.#width / 2,
       this.#height,
       this.#width,
-      2 * 31.535
+      2 * groundHalfH
     );
     Matter.Body.setStatic(this.#ground.body, true);
 

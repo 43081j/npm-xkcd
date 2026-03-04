@@ -3,6 +3,10 @@ import {type ParsedLockFile, parse} from 'lockparse';
 
 let currentContainerPromise: Promise<WebContainer> | undefined;
 
+export async function bootContainer(): Promise<void> {
+  await getContainer();
+}
+
 async function getContainer(): Promise<WebContainer> {
   if (!currentContainerPromise) {
     currentContainerPromise = WebContainer.boot();

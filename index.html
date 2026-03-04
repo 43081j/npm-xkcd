@@ -7,13 +7,17 @@
     <link rel="stylesheet" href="./css/styles.css" />
   </head>
   <body>
-    <div id="form-container">
-      <form id="pkg-form">
-        <input id="pkg-input" type="text" placeholder="npm package name" autocomplete="off" />
-        <button type="submit">Visualize</button>
-      </form>
+    <div id="header">
+      <h1 id="site-title">xkcd: npm edition</h1>
+      <div id="form-container">
+        <form id="pkg-form">
+          <input id="pkg-input" type="text" placeholder="npm package name" autocomplete="off" />
+          <button type="submit">xkcd-ify</button>
+        </form>
+        <p id="status"></p>
+      </div>
     </div>
-    <div id="xkcd" style="display:none"></div>
+    <div id="xkcd"></div>
     <script src="./coi-serviceworker.js"></script>
     <script type="module" src="./src/main.ts"></script>
   </body>
