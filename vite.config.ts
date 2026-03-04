@@ -1,6 +1,12 @@
 import {defineConfig} from 'vite';
+import {viteStaticCopy} from 'vite-plugin-static-copy';
 
-export default defineConfig({
+export default defineConfig(({command}) => ({
+  plugins: [
+    command === 'build' && viteStaticCopy({
+      targets: [{ src: 'node_modules/coi-serviceworker/coi-serviceworker.js', dest: '.' }]
+    })
+  ],
   build: {
     outDir: 'dist',
   },
@@ -11,4 +17,4 @@ export default defineConfig({
       'Cross-Origin-Opener-Policy': 'same-origin'
     }
   }
-});
+}));
