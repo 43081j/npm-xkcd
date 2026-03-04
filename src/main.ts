@@ -14,12 +14,16 @@ function setStatus(text: string) {
   statusEl.textContent = text;
 }
 
+let activeXkcd: XKCD | null = null;
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const pkg = input.value.trim();
   if (!pkg) return;
 
-  history.pushState(null, '', `?q=${encodeURIComponent(pkg)}`);
+  if (new URLSearchParams(location.search).get('q') !== pkg) {
+    history.pushState(null, '', `?q=${encodeURIComponent(pkg)}`);
+  }
   button.disabled = true;
   button.textContent = 'Loading...';
   header.classList.add('loading');
@@ -39,9 +43,12 @@ form.addEventListener('submit', async (e) => {
   siteTitle.textContent = `xkcd: ${pkg}`;
   header.classList.remove('loading');
 
+  activeXkcd?.destroy();
+
   // Create canvas first so its height is in the layout before transitions start
   const instance = new q5('xkcd');
   const xkcd = new XKCD(instance, data);
+  activeXkcd = xkcd;
   (instance as typeof instance & {setup: unknown}).setup = xkcd.setup;
   instance.draw = xkcd.draw;
 

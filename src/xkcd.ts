@@ -121,6 +121,12 @@ export class XKCD {
     });
   };
 
+  destroy() {
+    Matter.World.clear(this.#engine.world, false);
+    Matter.Engine.clear(this.#engine);
+    this.#p5.remove();
+  }
+
   draw = () => {
     this.#p5.image(this.#img, 0, 0, this.#width, this.#height);
 
