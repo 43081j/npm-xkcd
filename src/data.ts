@@ -11,7 +11,7 @@ export async function computeRects(
   const sizes = await getPackageSizes();
   const seen = new Set<string>();
   const nodes: Array<{name: string; version: string}> = [];
-  const queue: ParsedDependency[] = [lockFile.root];
+  const queue: ParsedDependency[] = [...lockFile.root.dependencies];
 
   while (queue.length > 0) {
     const node = queue.shift()!;
