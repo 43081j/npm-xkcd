@@ -68,11 +68,10 @@ export class XKCD {
     }
     const margin = 20;
     const scale = Math.min(
-      1,
       (this.#width - margin) / maxX,
-      (this.#height - margin) / maxY
+      (this.#height * 0.55 - margin) / maxY
     );
-    if (scale < 1) {
+    if (scale !== 1) {
       for (const rect of this.#data) {
         rect[0] *= scale;
         rect[1] *= scale;
