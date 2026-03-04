@@ -60,6 +60,27 @@ export class XKCD {
       rect[3] *= 1.07;
     }
 
+    let maxX = 0;
+    let maxY = 0;
+    for (const rect of this.#data) {
+      maxX = Math.max(maxX, rect[0] + rect[2]);
+      maxY = Math.max(maxY, rect[1] + rect[3]);
+    }
+    const margin = 20;
+    const scale = Math.min(
+      1,
+      (this.#width - margin) / maxX,
+      (this.#height - margin) / maxY
+    );
+    if (scale < 1) {
+      for (const rect of this.#data) {
+        rect[0] *= scale;
+        rect[1] *= scale;
+        rect[2] *= scale;
+        rect[3] *= scale;
+      }
+    }
+
     for (const rect of this.#data) {
       rect[1] = this.#height - rect[1] - rect[3] - 20;
       rect[0] += 20;
