@@ -16,14 +16,7 @@ function setStatus(text: string) {
 
 let activeXkcd: XKCD | null = null;
 
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const pkg = input.value.trim();
-  if (!pkg) return;
-
-  if (new URLSearchParams(location.search).get('q') !== pkg) {
-    history.pushState(null, '', `?q=${encodeURIComponent(pkg)}`);
-  }
+async function loadPackage(pkg: string) {
   button.disabled = true;
   button.textContent = 'Loading...';
   header.classList.add('loading');
@@ -53,21 +46,39 @@ form.addEventListener('submit', async (e) => {
   instance.draw = xkcd.draw;
 
   document.body.classList.add('has-image');
+  setStatus('');
+  button.disabled = false;
+  button.textContent = 'xkcd-ify';
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const pkg = input.value.trim();
+  if (!pkg) return;
+
+  history.pushState(null, '', `?q=${encodeURIComponent(pkg)}`);
+  await loadPackage(pkg);
 });
 
 window.addEventListener('popstate', () => {
   const pkg = new URLSearchParams(location.search).get('q');
   if (pkg) {
+    input.value = pkg;
+    loadPackage(pkg);
+  } else {
+    // Back to home — show the form
+    activeXkcd?.destroy();
+    activeXkcd = null;
     document.body.classList.remove('has-image');
+    siteTitle.textContent = 'xkcd';
     button.disabled = false;
     button.textContent = 'xkcd-ify';
-    input.value = pkg;
-    form.requestSubmit();
+    input.value = '';
   }
 });
 
 const initialPkg = new URLSearchParams(location.search).get('q');
 if (initialPkg) {
   input.value = initialPkg;
-  form.requestSubmit();
+  loadPackage(initialPkg);
 }
