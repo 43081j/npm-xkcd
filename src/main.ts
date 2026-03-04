@@ -19,6 +19,7 @@ form.addEventListener('submit', async (e) => {
   const pkg = input.value.trim();
   if (!pkg) return;
 
+  history.replaceState(null, '', `?q=${encodeURIComponent(pkg)}`);
   button.disabled = true;
   button.textContent = 'Loading...';
   header.classList.add('loading');
@@ -46,3 +47,9 @@ form.addEventListener('submit', async (e) => {
 
   document.body.classList.add('has-image');
 });
+
+const initialPkg = new URLSearchParams(location.search).get('q');
+if (initialPkg) {
+  input.value = initialPkg;
+  form.requestSubmit();
+}
