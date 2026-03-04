@@ -17,6 +17,8 @@
     "build": "tsgo --noEmit && vite build",
     "dev": "vite",
     "format": "prettier --write src",
+    "lint": "npm run lint:format",
+    "lint:format": "prettier --check src",
     "test": "vitest run"
   },
   "devDependencies": {
