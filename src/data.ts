@@ -47,15 +47,29 @@ export async function computeRects(
     rowY[r] = rowY[r - 1] + rowHeights[r - 1];
   }
 
+  const rowTotalWidth = new Array<number>(rows).fill(0);
+  const rowNodeCount = new Array<number>(rows).fill(0);
+  for (let i = 0; i < pixelSizes.length; i++) {
+    const row = Math.floor(i / cols);
+    rowTotalWidth[row] += pixelSizes[i];
+    rowNodeCount[row]++;
+  }
+  const maxWidth = Math.max(...rowTotalWidth);
+
   const rowX = new Array<number>(rows).fill(0);
+  const rowIdx = new Array<number>(rows).fill(0);
   const rects: Array<[number, number, number, number, string]> = [];
 
   for (let i = 0; i < pixelSizes.length; i++) {
     const row = Math.floor(i / cols);
     const size = pixelSizes[i];
+    const n = rowNodeCount[row];
+    const gap = n > 1 ? (maxWidth - rowTotalWidth[row]) / (n - 1) : 0;
+    const x = rowX[row] + rowIdx[row] * gap;
     const {name, version} = nodes[i];
-    rects.push([rowX[row], rowY[row], size, size, `${name}@${version}`]);
+    rects.push([x, rowY[row], size, rowHeights[row], `${name}@${version}`]);
     rowX[row] += size;
+    rowIdx[row]++;
   }
 
   return rects;
