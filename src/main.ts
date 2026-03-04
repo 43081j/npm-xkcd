@@ -19,7 +19,7 @@ form.addEventListener('submit', async (e) => {
   const pkg = input.value.trim();
   if (!pkg) return;
 
-  history.replaceState(null, '', `?q=${encodeURIComponent(pkg)}`);
+  history.pushState(null, '', `?q=${encodeURIComponent(pkg)}`);
   button.disabled = true;
   button.textContent = 'Loading...';
   header.classList.add('loading');
@@ -46,6 +46,17 @@ form.addEventListener('submit', async (e) => {
   instance.draw = xkcd.draw;
 
   document.body.classList.add('has-image');
+});
+
+window.addEventListener('popstate', () => {
+  const pkg = new URLSearchParams(location.search).get('q');
+  if (pkg) {
+    document.body.classList.remove('has-image');
+    button.disabled = false;
+    button.textContent = 'xkcd-ify';
+    input.value = pkg;
+    form.requestSubmit();
+  }
 });
 
 const initialPkg = new URLSearchParams(location.search).get('q');
