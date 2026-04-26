@@ -1,42 +1,20 @@
-import type {ParsedDependency, ParsedLockFile} from 'lockparse';
-import {getPackageSizes} from './container.js';
+import type {ResolvedTree} from './resolver.js';
 
 function sizeToPixels(bytes: number): number {
   return Math.max(10, Math.sqrt(bytes / 1000));
 }
 
-function computeDepths(lockFile: ParsedLockFile): Map<string, number> {
-  const depths = new Map<string, number>();
+export function computeRects(
+  tree: ResolvedTree
+): Array<[number, number, number, number, string]> {
+  const {sizes, depths} = tree;
 
-  function visit(dep: ParsedDependency, depth: number, path: Set<string>) {
-    const key = `${dep.name}@${dep.version}`;
-    if (path.has(key)) return;
-    if ((depths.get(key) ?? -1) >= depth) return;
-    depths.set(key, depth);
-    path.add(key);
-    for (const child of dep.dependencies) {
-      visit(child, depth + 1, path);
-    }
-    path.delete(key);
-  }
-
-  for (const dep of lockFile.root.dependencies) {
-    visit(dep, 0, new Set());
-  }
-
-  return depths;
-}
-
-export async function computeRects(
-  lockFile: ParsedLockFile
-): Promise<Array<[number, number, number, number, string]>> {
-  const sizes = await getPackageSizes();
-  const depths = computeDepths(lockFile);
-
-  // deepest dependencies first
-  const nodes = [...depths.entries()].sort((a, b) => b[1] - a[1]);
+  // deepest dependencies first; skip packages with no known size
+  const nodes = [...depths.entries()]
+    .filter(([key]) => sizes.has(key))
+    .sort((a, b) => b[1] - a[1]);
   const pixelSizes = nodes.map(([key]) =>
-    Math.round(sizeToPixels(sizes.get(key) ?? 0))
+    Math.round(sizeToPixels(sizes.get(key)!))
   );
 
   const totalArea = pixelSizes.reduce((sum, s) => sum + s * s, 0);
