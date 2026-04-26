@@ -22,6 +22,7 @@ export class XKCD {
   #mouse!: Matter.Mouse;
   #width!: number;
   #height!: number;
+  #canvas!: HTMLCanvasElement;
 
   constructor(p: Q5, data: Array<[number, number, number, number, string]>) {
     this.#p5 = p;
@@ -44,7 +45,7 @@ export class XKCD {
     this.#img = await this.#p5.loadImage('images/xkcd.png');
     this.#width = this.#img.width / 2;
     this.#height = this.#img.height / 2;
-    const canvas = await this.#p5.Canvas(this.#width, this.#height);
+    this.#canvas = await this.#p5.Canvas(this.#width, this.#height);
     this.#engine = Matter.Engine.create();
 
     this.#engine.positionIterations = 1000;
@@ -108,7 +109,7 @@ export class XKCD {
 
     Matter.Engine.update(this.#engine);
 
-    this.#mouse = Matter.Mouse.create(canvas);
+    this.#mouse = Matter.Mouse.create(this.#canvas);
     this.#mouse.pixelRatio = this.#p5.pixelDensity(null as never);
     const mouseConstraint = Matter.MouseConstraint.create(this.#engine, {
       mouse: this.#mouse
@@ -125,7 +126,7 @@ export class XKCD {
     Matter.World.clear(this.#engine.world, false);
     Matter.Engine.clear(this.#engine);
     this.#p5.noLoop();
-    this.#p5.canvas.remove();
+    this.#canvas.remove();
   }
 
   draw = () => {
