@@ -23,13 +23,13 @@
   },
   "devDependencies": {
     "@types/matter-js": "^0.20.2",
-    "@typescript/native-preview": "^7.0.0-dev.20260303.1",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@typescript/native-preview": "^7.0.0-dev.20260426.1",
+    "@vitest/coverage-v8": "^4.1.5",
     "fast-npm-meta": "^1.5.0",
     "matter-js": "^0.20.0",
-    "prettier": "^3.8.1",
-    "q5": "^4.3.0",
-    "vite": "^7.3.1",
+    "prettier": "^3.8.3",
+    "q5": "^4.5.0",
+    "vite": "^8.0.10",
     "vitest": "^4.0.18"
   }
 }
