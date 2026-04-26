@@ -124,7 +124,8 @@ export class XKCD {
   destroy() {
     Matter.World.clear(this.#engine.world, false);
     Matter.Engine.clear(this.#engine);
-    this.#p5.clear();
+    this.#p5.noLoop();
+    this.#p5.canvas.remove();
   }
 
   draw = () => {
