@@ -1,6 +1,6 @@
 import 'q5';
 import {computeRects} from './data.js';
-import {getLockFile, installPackage, bootContainer} from './container.js';
+import {resolveTree} from './resolver.js';
 import {XKCD} from './xkcd.js';
 
 const form = document.getElementById('pkg-form') as HTMLFormElement;
@@ -21,17 +21,11 @@ async function loadPackage(pkg: string) {
   button.textContent = 'Loading...';
   header.classList.add('loading');
 
-  setStatus('Initialising container...');
-  await bootContainer();
-
-  setStatus(`Installing ${pkg}...`);
-  await installPackage(pkg);
-
-  setStatus('Reading lockfile...');
-  const lockfile = await getLockFile();
+  setStatus(`Resolving ${pkg}...`);
+  const tree = await resolveTree(pkg);
 
   setStatus('Computing layout...');
-  const data = await computeRects(lockfile);
+  const data = computeRects(tree);
 
   siteTitle.textContent = `xkcd: ${pkg}`;
   header.classList.remove('loading');
