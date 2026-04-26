@@ -9,6 +9,7 @@ const button = form.querySelector('button') as HTMLButtonElement;
 const header = document.getElementById('header') as HTMLDivElement;
 const statusEl = document.getElementById('status') as HTMLParagraphElement;
 const siteTitle = document.getElementById('site-title') as HTMLHeadingElement;
+const xkcdContainer = document.getElementById('xkcd') as HTMLDivElement;
 
 function setStatus(text: string) {
   statusEl.textContent = text;
@@ -33,7 +34,7 @@ async function loadPackage(pkg: string) {
   activeXkcd?.destroy();
 
   // Create canvas first so its height is in the layout before transitions start
-  const instance = new q5('xkcd');
+  const instance = new q5('xkcd', xkcdContainer);
   const xkcd = new XKCD(instance, data);
   activeXkcd = xkcd;
   (instance as typeof instance & {setup: unknown}).setup = xkcd.setup;
