@@ -135,7 +135,7 @@ export class XKCD {
     Matter.Engine.update(this.#engine);
 
     this.#p5.strokeWeight(2);
-    this.#p5.fill(this.#p5.color(225));
+    (this.#p5.fill as unknown as (c: Color) => void)(this.#p5.color(225));
     this.#p5.rectMode('center');
 
     for (let re of this.#rects) {
@@ -164,10 +164,10 @@ export class XKCD {
       const th = 14;
       const tx = this.#p5.constrain(mp.x + 10, 0, this.#width - tw - pad * 2);
       const ty = mp.y - th - 6 < 0 ? mp.y + 6 : mp.y - th - 6;
-      this.#p5.fill(this.#p5.color(255));
+      (this.#p5.fill as unknown as (c: Color) => void)(this.#p5.color(255));
       this.#p5.strokeWeight(1);
       this.#p5.rect(tx - pad, ty - pad, tw + pad * 2, th + pad * 2, 2);
-      this.#p5.fill(this.#p5.color(0));
+      (this.#p5.fill as unknown as (c: Color) => void)(this.#p5.color(0));
       this.#p5.noStroke();
       this.#p5.text(r.name, tx, ty + th - 2);
     }
