@@ -22,28 +22,33 @@ async function loadPackage(pkg: string) {
   button.textContent = 'Loading...';
   header.classList.add('loading');
 
-  setStatus(`Resolving ${pkg}...`);
-  const tree = await resolveTree(pkg);
+  try {
+    setStatus(`Resolving ${pkg}...`);
+    const tree = await resolveTree(pkg);
 
-  setStatus('Computing layout...');
-  const data = computeRects(tree);
+    setStatus('Computing layout...');
+    const data = computeRects(tree);
 
-  siteTitle.textContent = `xkcd: ${pkg}`;
-  header.classList.remove('loading');
+    siteTitle.textContent = `xkcd: ${pkg}`;
 
-  activeXkcd?.destroy();
+    activeXkcd?.destroy();
 
-  // Create canvas first so its height is in the layout before transitions start
-  const instance = new q5('xkcd', xkcdContainer);
-  const xkcd = new XKCD(instance, data);
-  activeXkcd = xkcd;
-  (instance as typeof instance & {setup: unknown}).setup = xkcd.setup;
-  instance.draw = xkcd.draw;
+    // Create canvas first so its height is in the layout before transitions start
+    const instance = new q5('xkcd', xkcdContainer);
+    const xkcd = new XKCD(instance, data);
+    activeXkcd = xkcd;
+    (instance as typeof instance & {setup: unknown}).setup = xkcd.setup;
+    instance.draw = xkcd.draw;
 
-  document.body.classList.add('has-image');
-  setStatus('');
-  button.disabled = false;
-  button.textContent = 'xkcd-ify';
+    document.body.classList.add('has-image');
+    setStatus('');
+  } catch (e) {
+    setStatus(e instanceof Error ? e.message : `Failed to load ${pkg}`);
+  } finally {
+    header.classList.remove('loading');
+    button.disabled = false;
+    button.textContent = 'xkcd-ify';
+  }
 }
 
 form.addEventListener('submit', async (e) => {
