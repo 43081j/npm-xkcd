@@ -73,7 +73,9 @@ export async function resolveTree(rootPackage: string): Promise<ResolvedTree> {
   const [rootResolved] = await getLatestVersionBatch([
     normalizeSpec(rootPackage)
   ]);
-  if (!rootResolved.version) return {sizes, depths};
+  if (!rootResolved.version) {
+    throw new Error(`Package not found: ${rootPackage}`);
+  }
 
   let sizeQueue: Array<[string, string]> = [
     [rootResolved.name, rootResolved.version]
