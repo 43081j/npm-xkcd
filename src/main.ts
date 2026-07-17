@@ -10,12 +10,60 @@ const header = document.getElementById('header') as HTMLDivElement;
 const statusEl = document.getElementById('status') as HTMLParagraphElement;
 const siteTitle = document.getElementById('site-title') as HTMLHeadingElement;
 const xkcdContainer = document.getElementById('xkcd') as HTMLDivElement;
+const tiltToggle = document.getElementById('tilt-toggle') as HTMLButtonElement;
 
 function setStatus(text: string) {
   statusEl.textContent = text;
 }
 
 let activeXkcd: XKCD | null = null;
+
+declare global {
+  interface Window {
+    DeviceOrientationEvent?: typeof DeviceOrientationEvent & {
+      requestPermission?: () => Promise<'granted' | 'denied'>;
+    };
+  }
+}
+
+const orientationEvent = window.DeviceOrientationEvent;
+
+if (orientationEvent) {
+  document.body.classList.add('tilt-available');
+}
+
+let tiltOn = false;
+let tiltPermitted = false;
+
+async function permitTilt(): Promise<boolean> {
+  if (tiltPermitted) return true;
+
+  if (typeof orientationEvent?.requestPermission !== 'function') {
+    tiltPermitted = true;
+    return true;
+  }
+
+  try {
+    tiltPermitted = (await orientationEvent.requestPermission()) === 'granted';
+  } catch {
+    tiltPermitted = false;
+  }
+
+  return tiltPermitted;
+}
+
+tiltToggle.addEventListener('click', async () => {
+  if (!tiltOn && !(await permitTilt())) {
+    tiltToggle.textContent = 'Tilt blocked';
+    tiltToggle.disabled = true;
+    return;
+  }
+
+  tiltOn = !tiltOn;
+  tiltToggle.textContent = tiltOn ? 'Disable tilt' : 'Enable tilt';
+  tiltToggle.setAttribute('aria-pressed', String(tiltOn));
+  activeXkcd?.setTilt(tiltOn);
+});
 
 async function loadPackage(pkg: string) {
   button.disabled = true;
@@ -37,6 +85,7 @@ async function loadPackage(pkg: string) {
     const instance = new q5('xkcd', xkcdContainer);
     const xkcd = new XKCD(instance, data);
     activeXkcd = xkcd;
+    xkcd.setTilt(tiltOn);
     (instance as typeof instance & {setup: unknown}).setup = xkcd.setup;
     instance.draw = xkcd.draw;
 
