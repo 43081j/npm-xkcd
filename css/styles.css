@@ -41,6 +41,35 @@ body.has-image #xkcd {
   opacity: 1;
 }
 
+#controls {
+  display: none;
+  margin-top: 12px;
+}
+
+body.has-image.tilt-available #controls {
+  display: block;
+}
+
+#tilt-toggle {
+  padding: 8px 16px;
+  font-size: 1rem;
+  background: #fff;
+  color: #333;
+  border: 2px solid #333;
+  cursor: pointer;
+}
+
+#tilt-toggle[aria-pressed='true'] {
+  background: #333;
+  color: #fff;
+}
+
+#tilt-toggle:disabled {
+  border-color: #aaa;
+  color: #aaa;
+  cursor: default;
+}
+
 #site-title {
   margin: 0 0 4px;
   font-size: 2rem;

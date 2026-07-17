@@ -12,10 +12,15 @@ declare global {
   ): void;
 }
 
+const DEG_TO_RAD = Math.PI / 180;
+const GROUND_HALF_H = 31.535;
+const BOUNDS_OVERFLOW = 0.5;
+const BOUNDS_THICKNESS = 100;
+
 export class XKCD {
   #img!: Q5.Image;
-  #engine!: Matter.Engine;
-  #rects!: Rect[];
+  #engine: Matter.Engine;
+  #rects: Rect[] = [];
   #p5: Q5;
   #ground!: Rect;
   #data: Array<[number, number, number, number, string]>;
@@ -23,10 +28,16 @@ export class XKCD {
   #width!: number;
   #height!: number;
   #canvas!: HTMLCanvasElement;
+  #tiltEnabled = false;
+  #bounds: Matter.Body[] = [];
+  #ready = false;
 
   constructor(p: Q5, data: Array<[number, number, number, number, string]>) {
     this.#p5 = p;
     this.#data = data;
+    this.#engine = Matter.Engine.create();
+    this.#engine.positionIterations = 1000;
+    this.#engine.velocityIterations = 1000;
   }
 
   #createRect(x: number, y: number, w: number, h: number): Rect {
@@ -41,15 +52,70 @@ export class XKCD {
     };
   }
 
+  /** Bricks hold their stacked layout until something disturbs them. */
+  #wake() {
+    for (const r of this.#rects) {
+      Matter.Body.setStatic(r.body, false);
+    }
+  }
+
+  #handleOrientation = (e: DeviceOrientationEvent) => {
+    this.#engine.gravity.x = Math.sin((e.gamma ?? 0) * DEG_TO_RAD);
+    this.#engine.gravity.y = Math.sin((e.beta ?? 0) * DEG_TO_RAD);
+    this.#wake();
+  };
+
+  #syncBounds() {
+    if (!this.#ready) return;
+
+    if (!this.#tiltEnabled) {
+      Matter.Composite.remove(this.#engine.world, this.#bounds);
+      this.#bounds = [];
+      return;
+    }
+
+    if (this.#bounds.length) return;
+
+    const t = BOUNDS_THICKNESS;
+    const left = -this.#width * BOUNDS_OVERFLOW;
+    const right = this.#width - left;
+    const top = -this.#height * BOUNDS_OVERFLOW;
+    const floor = this.#height - GROUND_HALF_H;
+    const spanX = right - left + 2 * t;
+    const spanY = floor - top + 2 * t;
+    const midX = (left + right) / 2;
+    const midY = (top + floor) / 2;
+
+    this.#bounds = [
+      Matter.Bodies.rectangle(midX, floor + t / 2, spanX, t, {isStatic: true}),
+      Matter.Bodies.rectangle(midX, top - t / 2, spanX, t, {isStatic: true}),
+      Matter.Bodies.rectangle(left - t / 2, midY, t, spanY, {isStatic: true}),
+      Matter.Bodies.rectangle(right + t / 2, midY, t, spanY, {isStatic: true})
+    ];
+
+    Matter.Composite.add(this.#engine.world, this.#bounds);
+  }
+
+  setTilt(enabled: boolean) {
+    if (enabled === this.#tiltEnabled) return;
+    this.#tiltEnabled = enabled;
+
+    if (enabled) {
+      window.addEventListener('deviceorientation', this.#handleOrientation);
+    } else {
+      window.removeEventListener('deviceorientation', this.#handleOrientation);
+      this.#engine.gravity.x = 0;
+      this.#engine.gravity.y = 1;
+    }
+
+    this.#syncBounds();
+  }
+
   setup = async () => {
     this.#img = await this.#p5.loadImage('images/xkcd.png');
     this.#width = this.#img.width / 2;
     this.#height = this.#img.height / 2;
     this.#canvas = await this.#p5.Canvas(this.#width, this.#height);
-    this.#engine = Matter.Engine.create();
-
-    this.#engine.positionIterations = 1000;
-    this.#engine.velocityIterations = 1000;
 
     let y = 0;
     let ymax = 0;
@@ -81,10 +147,8 @@ export class XKCD {
       }
     }
 
-    const groundHalfH = 31.535;
-
     for (const rect of this.#data) {
-      rect[1] = this.#height - rect[1] - rect[3] - groundHalfH;
+      rect[1] = this.#height - rect[1] - rect[3] - GROUND_HALF_H;
       rect[0] += 20;
       y = rect[1] + rect[3];
       ymax = this.#p5.max(y, ymax);
@@ -96,7 +160,7 @@ export class XKCD {
       this.#width / 2,
       this.#height,
       this.#width,
-      2 * groundHalfH
+      2 * GROUND_HALF_H
     );
     Matter.Body.setStatic(this.#ground.body, true);
 
@@ -116,13 +180,15 @@ export class XKCD {
     });
     Matter.Composite.add(this.#engine.world, mouseConstraint);
     Matter.Events.on(mouseConstraint, 'mousedown', () => {
-      for (const r of this.#rects) {
-        Matter.Body.setStatic(r.body, false);
-      }
+      this.#wake();
     });
+
+    this.#ready = true;
+    this.#syncBounds();
   };
 
   destroy() {
+    this.setTilt(false);
     Matter.World.clear(this.#engine.world, false);
     Matter.Engine.clear(this.#engine);
     this.#p5.noLoop();
