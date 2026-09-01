@@ -24,12 +24,12 @@
   "devDependencies": {
     "@types/matter-js": "^0.20.2",
     "@typescript/native-preview": "^7.0.0-dev.20260707.2",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.11",
     "fast-npm-meta": "^2.2.0",
     "matter-js": "^0.20.0",
     "prettier": "^3.9.6",
-    "q5": "^4.7.4",
-    "vite": "^8.1.5",
+    "q5": "^4.8.2",
+    "vite": "^8.2.2",
     "vitest": "^4.0.18"
   }
 }
